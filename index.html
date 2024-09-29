@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://unpkg.com/openpgp@5.1.0/dist/openpgp.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Signature</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background-color: #1e1e1e;
+      box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 500px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    textarea {
+      border-color: #444;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      width: 90%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border: 1px solid;
+      border-radius: 4px;
+      height: 500px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: red;
+    }
+    .result.valid {
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Verify my messages:</h1>
+    <textarea id="message" placeholder="Paste message from Queen"></textarea>
+    <button onclick="verifySignature()">Verify</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const publicKeyPEM = `
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+=ysu4
+-----END PGP PUBLIC KEY BLOCK-----
+    `;
+
+    async function parseArmoredMessage() {
+        const fullMessage = document.getElementById('message').value;
+        const content = fullMessage.match(/(?<=-----BEGIN PGP SIGNED MESSAGE-----\r?\nHash: .+\r?\n\r?\n)(.*?)(?=\r?\n-----BEGIN PGP SIGNATURE-----)/s);
+        const signature = fullMessage.match(/(?<=-----BEGIN PGP SIGNATURE-----\r?\n\r?\n)(.*?)(?=\r?\n-----END PGP SIGNATURE-----)/s);
+
+        if(!content || !signature) {
+            return false;
+        }
+
+        if (content[0].length === 0 || signature[0].length === 0) {
+            console.error("Message or signature is empty.");
+            return false;
+        }
+
+        return {
+            message: content[0].trim(),
+            signature: signature[0].trim(),
+        };
+    }
+
+    function isValidBase64(strin) {
+        const base64Regex = /^(?:[A-Z0-9+/]{4})*(?:[A-Z0-9+/]{2}==|[A-Z0-9+/]{3}=)?$/i;
+        return base64Regex.test(strin.trim());
+    }
+
+    async function verifySignature() {
+        try {
+            if(!await parseArmoredMessage()) {
+                document.getElementById('result').innerHTML = 'Invalid message format, do not trust this message.';
+                document.getElementById('result').classList.remove('valid');
+                return;
+            }
+            const { message, signature } = await parseArmoredMessage();
+
+            const publicKeyObj = await openpgp.readKey({ armoredKey: publicKeyPEM });
+        
+            const verified = await openpgp.verify({
+                message: await openpgp.createMessage({ text: message }),
+                signature: await openpgp.readSignature({ armoredSignature: `-----BEGIN PGP SIGNATURE-----\n\n${signature}\n-----END PGP SIGNATURE-----`}),
+                verificationKeys: publicKeyObj
+            }).catch(err => {
+                throw new Error('Error verifying signature');
+            })
+            
+            const { verified: valid } = verified.signatures[0];
+            if (await valid) {
+                document.getElementById('result').innerHTML = 'Signature is valid!';
+                document.getElementById('result').classList.add('valid');
+            } else {
+                document.getElementById('result').innerHTML = 'Signature is invalid!';
+                document.getElementById('result').classList.remove('valid');
+            }
+        } catch(error) {
+            console.error(error);
+            document.getElementById('result').innerHTML = 'Error verifying signature';
+            document.getElementById('result').classList.remove('valid');
+        }
+    }
+  </script>
+</body>
+</html>
